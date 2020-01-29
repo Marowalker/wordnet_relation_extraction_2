@@ -145,7 +145,8 @@ class Dataset:
                 if s in self.vocab_synsets:
                     synset_id = self.vocab_synsets[s]
                 else:
-                    synset_id = self.vocab_synsets[str(wn.synsets('a')[0].offset())]
+                    # synset_id = self.vocab_synsets[str(wn.synsets('a')[0].offset())]
+                    synset_id = 0
                 ss += [synset_id]
 
             words.append(ws)
