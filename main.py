@@ -8,7 +8,9 @@ from models.model_cnn import CnnModel
 from sklearn.utils import shuffle
 
 
-def main():
+def main(times=1):
+    result_file = open('data/results.py', 'w+')
+
     if constants.IS_REBUILD == 1:
         print('Build data')
         # Load vocabularies
@@ -33,7 +35,7 @@ def main():
         dev = pickle.load(open(constants.PICKLE_DATA + 'dev.pickle', 'rb'))
         test = pickle.load(open(constants.PICKLE_DATA + 'test.pickle', 'rb'))
 
-    # Train, Validation Split
+        # Train, Validation Split
     validation = Dataset('', process_data=False)
     train_ratio = 0.85
     n_sample = int(len(dev.words) * (2 * train_ratio - 1))
@@ -73,9 +75,15 @@ def main():
             if identities[i][1] not in answer[identities[i][0]]:
                 answer[identities[i][0]].append(identities[i][1])
 
+    ev = evaluate_bc5(answer)
+
     print(
-        'result: abstract: ', evaluate_bc5(answer)
+        'result: abstract: ', ev
     )
+    result_file.write(str(ev))
+    result_file.write('\n')
+
+    result_file.close()
 
 
 if __name__ == '__main__':
