@@ -61,13 +61,13 @@ class CnnModel:
                                             initializer=tf.contrib.layers.xavier_initializer(),
                                             dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
             # create direction vectors randomly
-            # embedding_dir = tf.get_variable(name="dir_lut", shape=[3, constants.INPUT_W2V_DIM],
-            #                                 initializer=tf.contrib.layers.xavier_initializer(),
-            #                                 dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
+            embedding_dir = tf.get_variable(name="dir_lut", shape=[3, constants.INPUT_W2V_DIM],
+                                            initializer=tf.contrib.layers.xavier_initializer(),
+                                            dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
             # Concat dummy vector and relations vectors
             embeddings_re = tf.concat([dummy_eb, embeddings_re], axis=0)
             # Concat relation vectors and direction vectors
-            # embeddings_re = tf.concat([embeddings_re, embedding_dir], axis=0)
+            embeddings_re = tf.concat([embeddings_re, embedding_dir], axis=0)
 
             # Create word embedding tf variable
             embedding_wd = tf.Variable(self.embeddings, name="lut", dtype=tf.float32, trainable=False)
@@ -77,17 +77,17 @@ class CnnModel:
             self.word_embeddings = tf.nn.dropout(self.word_embeddings, self.dropout_embedding)
 
             # Create pos tag embeddings randomly
-            dummy_eb2 = tf.Variable(np.zeros((1, 5)), name="dummy2", dtype=tf.float32, trainable=False)
-            embeddings_re2 = tf.get_variable(name="re_lut2", shape=[self.num_of_depend + 1, 5],
+            dummy_eb2 = tf.Variable(np.zeros((1, 6)), name="dummy2", dtype=tf.float32, trainable=False)
+            embeddings_re2 = tf.get_variable(name="re_lut2", shape=[self.num_of_depend + 1, 6],
                                              initializer=tf.contrib.layers.xavier_initializer(),
                                              dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
             embeddings_re2 = tf.concat([dummy_eb2, embeddings_re2], axis=0)
-            # embedding_dir2 = tf.get_variable(name="dir2_lut", shape=[3, 5],
-            #                                  initializer=tf.contrib.layers.xavier_initializer(),
-            #                                  dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
-            # embeddings_re2 = tf.concat([embeddings_re2, embedding_dir2], axis=0)
+            embedding_dir2 = tf.get_variable(name="dir2_lut", shape=[3, 6],
+                                             initializer=tf.contrib.layers.xavier_initializer(),
+                                             dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
+            embeddings_re2 = tf.concat([embeddings_re2, embedding_dir2], axis=0)
             embeddings_pos = tf.get_variable(name='pos_lut',
-                                             shape=[self.num_of_pos + 1, 5],  # constants.INPUT_W2V_DIM],
+                                             shape=[self.num_of_pos + 1, 6],  # constants.INPUT_W2V_DIM],
                                              initializer=tf.contrib.layers.xavier_initializer(),
                                              dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
             embeddings_pos = tf.concat([dummy_eb2, embeddings_pos], axis=0)
@@ -96,19 +96,19 @@ class CnnModel:
             self.pos_embeddings = tf.nn.dropout(self.pos_embeddings, self.dropout_embedding)
 
             # Create synset embeddings randomly
-            dummy_eb4 = tf.Variable(np.zeros((1, 12)), name="dummy4", dtype=tf.float32, trainable=False)
+            dummy_eb4 = tf.Variable(np.zeros((1, 11)), name="dummy4", dtype=tf.float32, trainable=False)
             # embeddings_re4 = tf.get_variable(name="re_lut4", shape=[self.num_of_depend + 1, 12],
             #                                  initializer=tf.contrib.layers.xavier_initializer(),
             #                                  dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
-            embeddings_re4 = tf.random.uniform(name="re_lut4", shape=[self.num_of_depend + 1, 12], minval=0,
+            embeddings_re4 = tf.random.uniform(name="re_lut4", shape=[self.num_of_depend + 1, 11], minval=0,
                                                maxval=1e-4)
             embeddings_re4 = tf.concat([dummy_eb4, embeddings_re4], axis=0)
-            # embedding_dir4 = tf.get_variable(name="dir4_lut", shape=[3, 12],
-            #                                  initializer=tf.contrib.layers.xavier_initializer(),
-            #                                  dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
-            # embeddings_re4 = tf.concat([embeddings_re4, embedding_dir4], axis=0)
+            embedding_dir4 = tf.get_variable(name="dir4_lut", shape=[3, 11],
+                                             initializer=tf.contrib.layers.xavier_initializer(),
+                                             dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
+            embeddings_re4 = tf.concat([embeddings_re4, embedding_dir4], axis=0)
             embeddings_synset = tf.get_variable(name='syn_lut',
-                                                shape=[self.num_of_synset + 1, 12],
+                                                shape=[self.num_of_synset + 1, 11],
                                                 initializer=tf.contrib.layers.xavier_initializer(),
                                                 dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
             embeddings_synset = tf.concat([dummy_eb4, embeddings_synset], axis=0)
@@ -131,10 +131,10 @@ class CnnModel:
                                              initializer=tf.contrib.layers.xavier_initializer(),
                                              dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
             embeddings_re3 = tf.concat([dummy_eb3, embeddings_re3], axis=0)
-            # embedding_dir3 = tf.get_variable(name="dir3_lut", shape=[3, 50],
-            #                                  initializer=tf.contrib.layers.xavier_initializer(),
-            #                                  dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
-            # embeddings_re3 = tf.concat([embeddings_re3, embedding_dir3], axis=0)
+            embedding_dir3 = tf.get_variable(name="dir3_lut", shape=[3, 50],
+                                             initializer=tf.contrib.layers.xavier_initializer(),
+                                             dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
+            embeddings_re3 = tf.concat([embeddings_re3, embedding_dir3], axis=0)
             # Concat each position vector with half of each dependency relation vector
             embeddings_position1 = tf.concat([embeddings_position, embeddings_re3[:, :25]],
                                              axis=0)  # :int(constants.INPUT_W2V_DIM / 2)]], axis=0)
@@ -203,7 +203,7 @@ class CnnModel:
 
                 cnn_output_postag = tf.layers.conv2d(
                     self.pos_embeddings, filters=filters,
-                    kernel_size=(k, 5),
+                    kernel_size=(k, 6),
                     strides=(1, 1),
                     use_bias=False, padding="valid",
                     kernel_initializer=tf.contrib.layers.xavier_initializer(),
@@ -213,7 +213,7 @@ class CnnModel:
 
                 cnn_output_synset = tf.layers.conv2d(
                     self.synset_embeddings, filters=filters,
-                    kernel_size=(k, 12),
+                    kernel_size=(k, 11),
                     strides=(1, 1),
                     use_bias=False, padding="valid",
                     kernel_initializer=tf.contrib.layers.xavier_initializer(),
@@ -327,7 +327,7 @@ class CnnModel:
             # print("directions: ", directions.shape)
 
             # Create index matrix with words and dependency relations between words
-            new_relation_ids = self.embeddings.shape[0] + relation_ids # + directions
+            new_relation_ids = self.embeddings.shape[0] + relation_ids + directions
             word_relation_ids = np.zeros((word_ids.shape[0], word_ids.shape[1] + new_relation_ids.shape[1]))
             w_ids, rel_idxs = [], []
             for j in range(word_ids.shape[1] + new_relation_ids.shape[1]):
@@ -339,13 +339,13 @@ class CnnModel:
             word_relation_ids[:, rel_idxs] = new_relation_ids
 
             # Create index matrix with pos tags and dependency relations between pos tags
-            new_relation_ids = self.num_of_pos + 1 + relation_ids # + directions
+            new_relation_ids = self.num_of_pos + 1 + relation_ids + directions
             pos_relation_ids = np.zeros((pos_ids.shape[0], pos_ids.shape[1] + new_relation_ids.shape[1]))
             pos_relation_ids[:, w_ids] = pos_ids
             pos_relation_ids[:, rel_idxs] = new_relation_ids
 
             # Create indedx marix with synsets and dependency relations between synsets
-            new_relation_ids2 = self.num_of_synset + 1 + relation_ids # + directions
+            new_relation_ids2 = self.num_of_synset + 1 + relation_ids + directions
             synset_relation_ids = np.zeros((pos_ids.shape[0], pos_ids.shape[1] + new_relation_ids2.shape[1]))
             synset_relation_ids[:, w_ids] = synset_ids
             synset_relation_ids[:, rel_idxs] = new_relation_ids
