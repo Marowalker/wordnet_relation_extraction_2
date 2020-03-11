@@ -8,6 +8,7 @@ datasets = ['train', 'dev', 'test']
 input_path = 'data/raw_data'
 
 # hype_dict = create_hype_dict()
+depends = [d.strip() for d in open('data/all_depend.txt').readlines()]
 
 
 def add_synsets(word):
@@ -17,7 +18,7 @@ def add_synsets(word):
         replace = str(wn.synsets(w.lower())[0].offset())
     else:
         replace = str(0)
-    if res.find('|') != -1:
+    if res not in depends:
         w1, p = res.split('\\')
         # print(w1)
         temp = p.split('|')
@@ -40,7 +41,7 @@ def add_hypernyms(word):
             replace = str(0)
     else:
         replace = str(0)
-    if res.find('|') != -1:
+    if res not in depends:
         w1, p = res.split('\\')
         # print(w1)
         temp = p.split('|')
@@ -55,9 +56,9 @@ def add_hypernyms(word):
 
 for dataset in datasets:
     print("Process dataset: " + dataset)
-    with open(os.path.join(input_path, "sdp_data_acentors." + dataset + ".txt"), 'r') as f:
+    with open(os.path.join(input_path, "sdp_new_seq_acentors." + dataset + ".txt"), 'r') as f:
         lines = f.readlines()
-    with open(os.path.join(input_path, "sdp_data_acentors_hypernyms." + dataset + ".txt"), 'w') as f2:
+    with open(os.path.join(input_path, "sdp_seq_acentors_hypernyms." + dataset + ".txt"), 'w') as f2:
         for line in lines:
             if numbers_only(line):
                 f2.write(line)

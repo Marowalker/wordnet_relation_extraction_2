@@ -18,13 +18,13 @@ def main():
         vocab_depends = load_vocab(constants.ALL_DEPENDS)
 
         # Create Dataset objects and dump into files
-        train = Dataset('data/raw_data/sdp_data_acentors_hypernyms.train.txt', vocab_words=vocab_words,
+        train = Dataset('data/raw_data/sdf_data_acentors_hypernyms.train.txt', vocab_words=vocab_words,
                         vocab_poses=vocab_poses, vocab_synset=vocab_synsets, vocab_depends=vocab_depends)
         pickle.dump(train, open(constants.PICKLE_DATA + 'train.pickle', 'wb'), pickle.HIGHEST_PROTOCOL)
-        dev = Dataset('data/raw_data/sdp_data_acentors_hypernyms.dev.txt', vocab_words=vocab_words,
+        dev = Dataset('data/raw_data/sdf_data_acentors_hypernyms.dev.txt', vocab_words=vocab_words,
                       vocab_poses=vocab_poses, vocab_synset=vocab_synsets, vocab_depends=vocab_depends)
         pickle.dump(dev, open(constants.PICKLE_DATA + 'dev.pickle', 'wb'), pickle.HIGHEST_PROTOCOL)
-        test = Dataset('data/raw_data/sdp_data_acentors_hypernyms.test.txt', vocab_words=vocab_words,
+        test = Dataset('data/raw_data/sdf_data_acentors_hypernyms.test.txt', vocab_words=vocab_words,
                        vocab_poses=vocab_poses, vocab_synset=vocab_synsets, vocab_depends=vocab_depends)
         pickle.dump(test, open(constants.PICKLE_DATA + 'test.pickle', 'wb'), pickle.HIGHEST_PROTOCOL)
     else:

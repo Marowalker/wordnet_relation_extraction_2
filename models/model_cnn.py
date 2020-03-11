@@ -332,6 +332,7 @@ class CnnModel:
             w_ids, rel_idxs = [], []
             for j in range(word_ids.shape[1] + new_relation_ids.shape[1]):
                 if j % 2 == 0:
+                # if j == 0 or j == word_ids.shape[1] + new_relation_ids.shape[1] - 1:
                     w_ids.append(j)
                 else:
                     rel_idxs.append(j)

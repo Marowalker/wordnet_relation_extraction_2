@@ -103,7 +103,7 @@ class Dataset:
         poses = []
         synsets = []
         relations = []
-        directions = []   
+        directions = []
 
         for i in range(len(data_postitions)):
             position_1, position_2 = [], []
@@ -202,6 +202,7 @@ class Dataset:
                             node = node.split('|')
                             # print(node)
                             if idx % 2 == 0:
+                            # if idx == 0 or idx == len(nodes) - 1:
                                 for idx, _node in enumerate(node):
                                     word = constant.UNK if _node == '' else _node
                                     if idx == 0:
