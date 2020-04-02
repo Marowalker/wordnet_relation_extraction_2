@@ -4,7 +4,7 @@ import tensorflow as tf
 from sklearn.utils import shuffle
 from dataset import pad_sequences
 from utils import Timer, Log
-from data_utils import countNumRelation, countNumPos, countNumSynset
+from data_utils import countNumRelation, countNumPos, countNumSynset, countVocab
 import constants
 from sklearn.metrics import f1_score
 
@@ -24,6 +24,7 @@ class CnnModel:
         # Num of pos tags
         self.num_of_pos = countNumPos()
         self.num_of_synset = countNumSynset()
+        self.num_of_siblings = countVocab()
         self.num_of_class = len(constants.ALL_LABELS)
         self.trained_models = constants.TRAINED_MODELS
 
@@ -34,6 +35,8 @@ class CnnModel:
         self.labels = tf.placeholder(name="labels", shape=[None], dtype='int32')
         # Indexes of first channel (word + dependency relations)
         self.word_ids = tf.placeholder(name='word_ids', shape=[None, None], dtype='int32')
+        # Indexes of channel (siblingacters + dependency relations)
+        self.sibling_ids = tf.placeholder(name='sibling_ids', shape=[None, None], dtype='int32')
         # Indexes of third channel (position + dependency relations)
         self.positions_1 = tf.placeholder(name='positions_1', shape=[None, None], dtype='int32')
         # Indexes of third channel (position + dependency relations)
@@ -69,25 +72,35 @@ class CnnModel:
             # Concat relation vectors and direction vectors
             embeddings_re = tf.concat([embeddings_re, embedding_dir], axis=0)
 
+            # Create sibling word embeddings randomly
+            embeddings_sb = tf.get_variable(name="sb_lut", shape=[self.num_of_siblings + 1, constants.INPUT_W2V_DIM],
+                                            initializer=tf.contrib.layers.xavier_initializer(),
+                                            dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
+            embeddings_sb = tf.concat([dummy_eb, embeddings_sb], axis=0)
+            embeddings_sb = tf.concat([embeddings_sb, embeddings_re], axis=0)
+            self.sibling_embeddings = tf.nn.embedding_lookup(embeddings_sb, self.sibling_ids)
+            self.sibling_embeddings = tf.nn.dropout(self.sibling_embeddings, self.dropout_embedding)
+
             # Create word embedding tf variable
             embedding_wd = tf.Variable(self.embeddings, name="lut", dtype=tf.float32, trainable=False)
+            # embedding_wd = tf.concat([embedding_wd, embeddings_sb], axis=0)
             embedding_wd = tf.concat([embedding_wd, embeddings_re], axis=0)
             # Lookup from indexs to vectors of words and dependency relations
             self.word_embeddings = tf.nn.embedding_lookup(embedding_wd, self.word_ids)
             self.word_embeddings = tf.nn.dropout(self.word_embeddings, self.dropout_embedding)
 
             # Create pos tag embeddings randomly
-            dummy_eb2 = tf.Variable(np.zeros((1, 6)), name="dummy2", dtype=tf.float32, trainable=False)
-            embeddings_re2 = tf.get_variable(name="re_lut2", shape=[self.num_of_depend + 1, 6],
+            dummy_eb2 = tf.Variable(np.zeros((1, 5)), name="dummy2", dtype=tf.float32, trainable=False)
+            embeddings_re2 = tf.get_variable(name="re_lut2", shape=[self.num_of_depend + 1, 5],
                                              initializer=tf.contrib.layers.xavier_initializer(),
                                              dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
             embeddings_re2 = tf.concat([dummy_eb2, embeddings_re2], axis=0)
-            embedding_dir2 = tf.get_variable(name="dir2_lut", shape=[3, 6],
+            embedding_dir2 = tf.get_variable(name="dir2_lut", shape=[3, 5],
                                              initializer=tf.contrib.layers.xavier_initializer(),
                                              dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
             embeddings_re2 = tf.concat([embeddings_re2, embedding_dir2], axis=0)
             embeddings_pos = tf.get_variable(name='pos_lut',
-                                             shape=[self.num_of_pos + 1, 6],  # constants.INPUT_W2V_DIM],
+                                             shape=[self.num_of_pos + 1, 5],  # constants.INPUT_W2V_DIM],
                                              initializer=tf.contrib.layers.xavier_initializer(),
                                              dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
             embeddings_pos = tf.concat([dummy_eb2, embeddings_pos], axis=0)
@@ -96,19 +109,19 @@ class CnnModel:
             self.pos_embeddings = tf.nn.dropout(self.pos_embeddings, self.dropout_embedding)
 
             # Create synset embeddings randomly
-            dummy_eb4 = tf.Variable(np.zeros((1, 11)), name="dummy4", dtype=tf.float32, trainable=False)
+            dummy_eb4 = tf.Variable(np.zeros((1, 12)), name="dummy4", dtype=tf.float32, trainable=False)
             # embeddings_re4 = tf.get_variable(name="re_lut4", shape=[self.num_of_depend + 1, 12],
             #                                  initializer=tf.contrib.layers.xavier_initializer(),
             #                                  dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
-            embeddings_re4 = tf.random.uniform(name="re_lut4", shape=[self.num_of_depend + 1, 11], minval=0,
+            embeddings_re4 = tf.random.uniform(name="re_lut4", shape=[self.num_of_depend + 1, 12], minval=0,
                                                maxval=1e-4)
             embeddings_re4 = tf.concat([dummy_eb4, embeddings_re4], axis=0)
-            embedding_dir4 = tf.get_variable(name="dir4_lut", shape=[3, 11],
+            embedding_dir4 = tf.get_variable(name="dir4_lut", shape=[3, 12],
                                              initializer=tf.contrib.layers.xavier_initializer(),
                                              dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
             embeddings_re4 = tf.concat([embeddings_re4, embedding_dir4], axis=0)
             embeddings_synset = tf.get_variable(name='syn_lut',
-                                                shape=[self.num_of_synset + 1, 11],
+                                                shape=[self.num_of_synset + 1, 12],
                                                 initializer=tf.contrib.layers.xavier_initializer(),
                                                 dtype=tf.float32, regularizer=tf.contrib.layers.l2_regularizer(1e-4))
             embeddings_synset = tf.concat([dummy_eb4, embeddings_synset], axis=0)
@@ -183,6 +196,7 @@ class CnnModel:
         with tf.variable_scope("cnn"):
             # Create 4-channel features
             self.word_embeddings = tf.expand_dims(self.word_embeddings, -1)
+            self.sibling_embeddings = tf.expand_dims(self.sibling_embeddings, -1)
             self.pos_embeddings = tf.expand_dims(self.pos_embeddings, -1)
             self.synset_embeddings = tf.expand_dims(self.synset_embeddings, -1)
             self.position_embeddings = tf.expand_dims(self.position_embeddings, -1)
@@ -201,9 +215,19 @@ class CnnModel:
                 )
                 cnn_output_w = tf.nn.tanh(cnn_output_w)
 
+                cnn_output_sb = tf.layers.conv2d(
+                    self.sibling_embeddings, filters=filters,
+                    kernel_size=(k, constants.INPUT_W2V_DIM),
+                    strides=(1, 1),
+                    use_bias=False, padding="valid",
+                    kernel_initializer=tf.contrib.layers.xavier_initializer(),
+                    kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-4)
+                )
+                cnn_output_sb = tf.nn.tanh(cnn_output_sb)
+
                 cnn_output_postag = tf.layers.conv2d(
                     self.pos_embeddings, filters=filters,
-                    kernel_size=(k, 6),
+                    kernel_size=(k, 5),
                     strides=(1, 1),
                     use_bias=False, padding="valid",
                     kernel_initializer=tf.contrib.layers.xavier_initializer(),
@@ -213,7 +237,7 @@ class CnnModel:
 
                 cnn_output_synset = tf.layers.conv2d(
                     self.synset_embeddings, filters=filters,
-                    kernel_size=(k, 11),
+                    kernel_size=(k, 12),
                     strides=(1, 1),
                     use_bias=False, padding="valid",
                     kernel_initializer=tf.contrib.layers.xavier_initializer(),
@@ -231,7 +255,7 @@ class CnnModel:
                 )
                 cnn_output_position = tf.nn.tanh(cnn_output_position)
 
-                cnn_output = tf.concat([cnn_output_w, cnn_output_postag, cnn_output_synset, cnn_output_position],
+                cnn_output = tf.concat([cnn_output_w, cnn_output_sb, cnn_output_postag, cnn_output_synset, cnn_output_position],
                                        axis=1)
                 cnn_output = tf.reduce_max(cnn_output, 1)
                 cnn_output = tf.reshape(cnn_output, [-1, filters])
@@ -265,7 +289,7 @@ class CnnModel:
                 kernel_initializer=tf.contrib.layers.xavier_initializer(),
                 kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-4)
             )
-            self.logits = tf.nn.softmax(self.output)
+            self.logits = tf.nn.sigmoid(self.output)
 
     def _add_loss_op(self):
         """
@@ -307,6 +331,7 @@ class CnnModel:
         while idx < num_batch:
             # Get BATCH_SIZE samples each batch
             word_ids = data['words'][start:start + self.batch_size]
+            sibling_ids = data['siblings'][start:start + self.batch_size]
             positions_1 = data['positions_1'][start:start + self.batch_size]
             positions_2 = data['positions_2'][start:start + self.batch_size]
             pos_ids = data['poses'][start:start + self.batch_size]
@@ -317,6 +342,7 @@ class CnnModel:
 
             # Padding sentences to the length of longest one
             word_ids, _ = pad_sequences(word_ids, pad_tok=0, max_sent_length=self.max_length)
+            sibling_ids, _ = pad_sequences(sibling_ids, pad_tok=0, max_sent_length=self.max_length)
             positions_1, _ = pad_sequences(positions_1, pad_tok=0, max_sent_length=self.max_length)
             positions_2, _ = pad_sequences(positions_2, pad_tok=0, max_sent_length=self.max_length)
             pos_ids, _ = pad_sequences(pos_ids, pad_tok=0, max_sent_length=self.max_length)
@@ -324,7 +350,8 @@ class CnnModel:
             relation_ids, _ = pad_sequences(relation_ids, pad_tok=0, max_sent_length=self.max_length)
             directions, _ = pad_sequences(directions, pad_tok=0, max_sent_length=self.max_length)
 
-            # print("directions: ", directions.shape)
+            # print("words: ", word_ids.shape)
+            # print("siblings: ", sibling_ids.shape)
 
             # Create index matrix with words and dependency relations between words
             new_relation_ids = self.embeddings.shape[0] + relation_ids + directions
@@ -332,7 +359,6 @@ class CnnModel:
             w_ids, rel_idxs = [], []
             for j in range(word_ids.shape[1] + new_relation_ids.shape[1]):
                 if j % 2 == 0:
-                # if j == 0 or j == word_ids.shape[1] + new_relation_ids.shape[1] - 1:
                     w_ids.append(j)
                 else:
                     rel_idxs.append(j)
@@ -340,18 +366,25 @@ class CnnModel:
             word_relation_ids[:, rel_idxs] = new_relation_ids
 
             # Create index matrix with pos tags and dependency relations between pos tags
+            new_relation_ids = self.num_of_siblings + 1 + relation_ids + directions
+            sibling_relation_ids = np.zeros((sibling_ids.shape[0], sibling_ids.shape[1] + new_relation_ids.shape[1]))
+            sibling_relation_ids[:, w_ids] = sibling_ids
+            sibling_relation_ids[:, rel_idxs] = new_relation_ids
+
+            # Create index matrix with pos tags and dependency relations between pos tags
             new_relation_ids = self.num_of_pos + 1 + relation_ids + directions
             pos_relation_ids = np.zeros((pos_ids.shape[0], pos_ids.shape[1] + new_relation_ids.shape[1]))
             pos_relation_ids[:, w_ids] = pos_ids
             pos_relation_ids[:, rel_idxs] = new_relation_ids
 
-            # Create indedx marix with synsets and dependency relations between synsets
-            new_relation_ids2 = self.num_of_synset + 1 + relation_ids + directions
-            synset_relation_ids = np.zeros((pos_ids.shape[0], pos_ids.shape[1] + new_relation_ids2.shape[1]))
+            # Create index matrix with synsets and dependency relations between synsets
+            new_relation_ids = self.num_of_synset + 1 + relation_ids + directions
+            synset_relation_ids = np.zeros((pos_ids.shape[0], pos_ids.shape[1] + new_relation_ids.shape[1]))
             synset_relation_ids[:, w_ids] = synset_ids
             synset_relation_ids[:, rel_idxs] = new_relation_ids
 
             # Create index matrix with positions and dependency relations between positions
+            new_relation_ids = self.max_length + 1 + relation_ids + directions
             positions_1_relation_ids = np.zeros(
                 (positions_1.shape[0], positions_1.shape[1] + new_relation_ids.shape[1]))
             positions_1_relation_ids[:, w_ids] = positions_1
@@ -366,7 +399,7 @@ class CnnModel:
             start += self.batch_size
             idx += 1
             yield positions_1_relation_ids, positions_2_relation_ids, \
-                  word_relation_ids, pos_relation_ids, synset_relation_ids, relation_ids, labels
+                  word_relation_ids, sibling_relation_ids, pos_relation_ids, synset_relation_ids, relation_ids, labels
 
     def _train(self, epochs, early_stopping=True, patience=10, verbose=True):
         Log.verbose = verbose
@@ -380,9 +413,11 @@ class CnnModel:
             sess.run(tf.global_variables_initializer())
             num_batch_train = len(self.dataset_train.labels) // self.batch_size + 1
             for e in range(epochs):
-                words_shuffled, positions_1_shuffle, positions_2_shuffle, \
+                # print(len(self.dataset_train.siblings))
+                words_shuffled, siblings_shuffled, positions_1_shuffle, positions_2_shuffle, \
                 poses_shuffled, synset_shuffled, relations_shuffled, directions_shuffled, labels_shuffled = shuffle(
                     self.dataset_train.words,
+                    self.dataset_train.siblings,
                     self.dataset_train.positions_1,
                     self.dataset_train.positions_2,
                     self.dataset_train.poses,
@@ -394,6 +429,7 @@ class CnnModel:
 
                 data = {
                     'words': words_shuffled,
+                    'siblings': siblings_shuffled,
                     'positions_1': positions_1_shuffle,
                     'positions_2': positions_2_shuffle,
                     'poses': poses_shuffled,
@@ -404,11 +440,12 @@ class CnnModel:
                 }
 
                 for idx, batch in enumerate(self._next_batch(data=data, num_batch=num_batch_train)):
-                    positions_1, positions_2, word_ids, pos_ids, synset_ids, relation_ids, labels = batch
+                    positions_1, positions_2, word_ids, sibling_ids, pos_ids, synset_ids, relation_ids, labels = batch
                     feed_dict = {
                         self.positions_1: positions_1,
                         self.positions_2: positions_2,
                         self.word_ids: word_ids,
+                        self.sibling_ids: sibling_ids,
                         self.pos_ids: pos_ids,
                         self.synset_ids: synset_ids,
                         self.relations: relation_ids,
@@ -428,6 +465,7 @@ class CnnModel:
 
                     data = {
                         'words': self.dataset_validation.words,
+                        'siblings': self.dataset_validation.siblings,
                         'positions_1': self.dataset_validation.positions_1,
                         'positions_2': self.dataset_validation.positions_2,
                         'poses': self.dataset_validation.poses,
@@ -438,11 +476,12 @@ class CnnModel:
                     }
 
                     for idx, batch in enumerate(self._next_batch(data=data, num_batch=num_batch_val)):
-                        positions_1, positions_2, word_ids, pos_ids, synset_ids, relation_ids, labels = batch
+                        positions_1, positions_2, word_ids, sibling_ids, pos_ids, synset_ids, relation_ids, labels = batch
                         acc, f1 = self._accuracy(sess, feed_dict={
                             self.positions_1: positions_1,
                             self.positions_2: positions_2,
                             self.word_ids: word_ids,
+                            self.sibling_ids: sibling_ids,
                             self.pos_ids: pos_ids,
                             self.synset_ids: synset_ids,
                             self.relations: relation_ids,
@@ -519,6 +558,7 @@ class CnnModel:
 
             data = {
                 'words': test.words,
+                'siblings': test.siblings,
                 'positions_1': test.positions_1,
                 'positions_2': test.positions_2,
                 'poses': test.poses,
@@ -529,11 +569,12 @@ class CnnModel:
             }
 
             for idx, batch in enumerate(self._next_batch(data=data, num_batch=num_batch)):
-                positions_1, positions_2, word_ids, pos_ids, synset_ids, relation_ids, labels = batch
+                positions_1, positions_2, word_ids, sibling_ids, pos_ids, synset_ids, relation_ids, labels = batch
                 feed_dict = {
                     self.positions_1: positions_1,
                     self.positions_2: positions_2,
                     self.word_ids: word_ids,
+                    self.sibling_ids: sibling_ids,
                     self.pos_ids: pos_ids,
                     self.synset_ids: synset_ids,
                     self.relations: relation_ids,

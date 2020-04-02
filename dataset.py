@@ -1,13 +1,8 @@
 import numpy as np
-import itertools
-from imblearn.over_sampling import RandomOverSampler
-from imblearn.under_sampling import RandomUnderSampler
-from sklearn.utils import shuffle
 import constants as constant
-import random
-from collections import Counter
 from nltk.corpus import wordnet as wn
-
+import constants
+from data_utils import load_vocab
 
 np.random.seed(13)
 
@@ -67,6 +62,7 @@ class Dataset:
         self.data_name = data_name
 
         self.words = None
+        self.siblings = None
         self.positions_1 = None
         self.positions_2 = None
         self.labels = None
@@ -94,9 +90,10 @@ class Dataset:
     def _process_data(self):
         with open(self.data_name, 'r') as f:
             raw_data = f.readlines()
-        data_words, data_postitions, data_y, data_pos, data_synsets, data_relations, \
+        data_words, data_siblings, data_postitions, data_y, data_pos, data_synsets, data_relations, \
                     data_directions, self.identities = self.parse_raw(raw_data)
         words = []
+        siblings = []
         positions_1 = []
         positions_2 = []
         labels = []
@@ -128,13 +125,19 @@ class Dataset:
                 ds += [did]
             directions.append(ds)
 
-            ws, ps, ss = [], [], []
-            for w, p, s in zip(data_words[i], data_pos[i], data_synsets[i]):
+            ws, ps, ss, sbs = [], [], [], []
+            for w, sb, p, s in zip(data_words[i], data_siblings[i], data_pos[i], data_synsets[i]):
                 if w in self.vocab_words:
                     word_id = self.vocab_words[w]
                 else:
                     word_id = self.vocab_words[constant.UNK]
                 ws.append(word_id)
+
+                if sb in self.vocab_words:
+                    sibling_id = self.vocab_words[sb]
+                else:
+                    sibling_id = self.vocab_words[constant.UNK]
+                sbs.append(sibling_id)
 
                 if p in self.vocab_poses:
                     p_id = self.vocab_poses[p]
@@ -150,6 +153,7 @@ class Dataset:
                 ss += [synset_id]
 
             words.append(ws)
+            siblings.append(sbs)
             poses.append(ps)
             synsets.append(ss)
 
@@ -157,6 +161,7 @@ class Dataset:
             labels.append(lb)
 
         self.words = words
+        self.siblings = siblings
         self.positions_1 = positions_1
         self.positions_2 = positions_2
         self.labels = labels
@@ -167,6 +172,7 @@ class Dataset:
 
     def parse_raw(self, raw_data):
         all_words = []
+        all_siblings = []
         all_positions = []
         all_relations = []
         all_directions = []
@@ -192,6 +198,7 @@ class Dataset:
                         # S xuoi
                         nodes = sdp.split()
                         words = []
+                        siblings = []
                         positions = []
                         poses = []
                         synsets = []
@@ -216,6 +223,8 @@ class Dataset:
                                         positions.append(min(int(position), constant.MAX_LENGTH))
                                         poses.append(p)
                                         synsets.append(s)
+                                    elif idx == len(node) - 1:
+                                        siblings.append(word)
                                     else:
                                         w = word.split('\\')[0]
                             else:
@@ -227,6 +236,7 @@ class Dataset:
                                 directions.append(d)
 
                         all_words.append(words)
+                        all_siblings.append(siblings)
                         all_positions.append(positions)
                         all_relations.append(relations)
                         all_directions.append(directions)
@@ -237,5 +247,5 @@ class Dataset:
                 else:
                     print(l)
 
-        return all_words, all_positions, all_labels, all_poses, all_synsets, all_relations, \
+        return all_words, all_siblings, all_positions, all_labels, all_poses, all_synsets, all_relations, \
                all_directions, all_identities

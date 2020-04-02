@@ -45,6 +45,7 @@ W2V_DATA = DATA + 'w2v_model/'
 
 # ALL_WORDS = DATA + 'vocab.txt'
 ALL_WORDS = DATA + 'vocab_lower.txt'
+ALL_CHARS = DATA + 'characters.txt'
 ALL_POSES = DATA + 'all_pos.txt'
 ALL_SYNSETS = DATA + 'all_hypernyms.txt'
 ALL_DEPENDS = DATA + 'all_depend.txt'
