@@ -379,7 +379,7 @@ class CnnModel:
 
             # Create index matrix with synsets and dependency relations between synsets
             new_relation_ids = self.num_of_synset + 1 + relation_ids + directions
-            synset_relation_ids = np.zeros((pos_ids.shape[0], pos_ids.shape[1] + new_relation_ids.shape[1]))
+            synset_relation_ids = np.zeros((synset_ids.shape[0], synset_ids.shape[1] + new_relation_ids.shape[1]))
             synset_relation_ids[:, w_ids] = synset_ids
             synset_relation_ids[:, rel_idxs] = new_relation_ids
 
